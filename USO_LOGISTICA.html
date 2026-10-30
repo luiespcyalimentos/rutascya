@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CY Alimentos - Sistema de Hojas de Ruta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cyblue: '#006ECA',
+            cyblueDark: '#005299',
+            cyred: '#E20613',
+            cyredDark: '#B8040F'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @page {
+      size: letter landscape;
+      margin: 5mm;
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print { display: none !important; }
+      .print-sheet {
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+    .print-container {
+      font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+      color: #000;
+    }
+    .print-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      border: 1.5px solid #000;
+      border-bottom: none;
+      background-color: #006ECA !important;
+      color: #fff !important;
+    }
+    .folio-highlight-box {
+      background-color: #E20613 !important;
+      color: #ffffff !important;
+      padding: 3px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-left: 1.5px solid #000;
+      min-width: 160px;
+    }
+    .print-grid {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1.5px solid #000;
+    }
+    .print-grid th, .print-grid td {
+      border: 1px solid #000;
+      padding: 1.8px 3.5px;
+      font-size: 9px;
+      line-height: 1.12;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .bg-cy-blue { background-color: #006ECA !important; color: #ffffff !important; }
+    .bg-cy-red { background-color: #E20613 !important; color: #ffffff !important; }
+    .bg-cy-light { background-color: #EBF4FF !important; color: #000000 !important; }
+    .bg-cy-gray { background-color: #D9E1F2 !important; color: #000000 !important; }
+    .comentarios-box {
+      border: 1px solid #000;
+      background-color: #ffffff !important;
+      padding: 3px 6px;
+      min-height: 36px;
+      margin-top: 4px;
+    }
+    .legal-box {
+      border: 1px solid #000;
+      background-color: #F9FAFB !important;
+      padding: 3px 6px;
+      font-size: 6.8px;
+      line-height: 1.15;
+      text-align: justify;
+      margin-top: 4px;
+    }
+    .dragging { opacity: 0.5; background-color: #EBF4FF !important; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen font-sans">
+
+  <!-- ENCABEZADO CON SELECTOR DE PERFILES -->
+  <header class="bg-cyblue text-white shadow-md border-b-4 border-cyred no-print">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-cyred text-white font-black px-3 py-1.5 rounded-lg text-base tracking-wider shadow-sm border border-white/20">
+          CY ALIMENTOS
+        </div>
+        <div>
+          <h1 class="text-base font-bold leading-tight tracking-tight">Plataforma de Tráfico y Hojas de Ruta</h1>
+          <span class="text-[11px] text-blue-100">Folios Locales (L-10180+) y Foráneos (F-4310+)</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- SELECTOR DE PERFILES SOLICITADOS -->
+        <div class="flex items-center gap-1.5 bg-white/20 border border-white/30 rounded-lg px-2.5 py-1 text-xs">
+          <span class="font-bold">👤 Perfil:</span>
+          <select id="selectPerfilActivo" onchange="cambiarPerfilActivo(this.value)" class="bg-cyblueDark text-white font-bold rounded px-2 py-0.5 outline-none cursor-pointer">
+            <option value="LUIS ESPINOZA">Luis Espinoza (Admin)</option>
+            <option value="ANGEL JARAMILLO">Angel Jaramillo</option>
+            <option value="GERARDO ZAMORA">Gerardo Zamora</option>
+            <option value="AUX LOGISTICA">Aux Logística</option>
+          </select>
+        </div>
+
+        <button onclick="cargarDatosIniciales(true)" class="bg-white/20 hover:bg-white/30 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition">
+          🔄 Sincronizar
+        </button>
+
+        <nav class="flex flex-wrap gap-1.5">
+          <button onclick="cambiarTab('tab-armar')" id="btn-tab-armar" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-cyblue shadow-sm transition">
+            1. Armar / Cabecera
+          </button>
+          <button onclick="cambiarTab('tab-ordenar')" id="btn-tab-ordenar" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyblueDark text-white hover:bg-white/20 transition flex items-center gap-1">
+            <span>2. Ordenar y Editar Clientes</span>
+            <span id="badgeOrdenCount" class="bg-cyred text-white px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+          </button>
+          <button onclick="cambiarTab('tab-carga')" id="btn-tab-carga" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyblueDark text-white hover:bg-white/20 transition">
+            3. Cargar Reporte Excel
+          </button>
+          <button onclick="cambiarTab('tab-historial')" id="btn-tab-historial" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyblueDark text-white hover:bg-white/20 transition">
+            4. Historial / Editar / Imprimir
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <div id="bannerModoEdicion" class="hidden bg-amber-400 text-slate-900 px-4 py-2 text-xs font-bold no-print shadow-inner">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <span class="bg-cyred text-white px-2 py-0.5 rounded uppercase">Modo Edición Activo</span>
+        <span>Estás modificando la hoja de ruta guardada <b id="lblFolioEditando" class="underline text-sm">L-10181</b>.</span>
+      </div>
+      <button onclick="cancelarModoEdicion()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded text-xs">
+        ✕ Cancelar Edición
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto p-3 md:p-5">
+
+    <!-- PANTALLA 1: ARMAR / CABECERA -->
+    <section id="tab-armar" class="no-print space-y-4">
+      <div class="bg-white p-4 rounded-xl shadow-sm border-t-4 border-cyblue border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 mb-3 gap-2">
+          <h2 class="text-sm font-bold uppercase text-cyblue flex items-center gap-2">
+            <span>📋 1. Datos de la Hoja de Ruta y Equipo Operativo</span>
+          </h2>
+          <span id="indicadorTipoFolio" class="text-[11px] bg-blue-50 text-cyblue border border-cyblue/30 font-bold px-2.5 py-0.5 rounded">
+            Folio Automático: Local (L-10180+)
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 text-xs">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">FECHA *</label>
+            <input type="date" id="inFecha" class="w-full border border-slate-300 rounded px-2 py-1.5 bg-blue-50/50 font-semibold">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">NOMBRE DE RUTA *</label>
+            <select id="inTurno" onchange="actualizarEtiquetaTipoFolio()" class="w-full border border-slate-300 rounded px-2 py-1.5 bg-blue-50/50 font-bold">
+              <optgroup label="RUTAS LOCALES (ID L-)">
+                <option value="LOCAL MATUTINA">LOCAL MATUTINA (Local L-)</option>
+                <option value="LOCAL VESPERTINA">LOCAL VESPERTINA (Local L-)</option>
+              </optgroup>
+              <optgroup label="RUTAS FORÁNEAS (ID F-)">
+                <option value="SONORA SUR">SONORA SUR (Foránea F-)</option>
+                <option value="SONORA NORTE">SONORA NORTE (Foránea F-)</option>
+                <option value="SIERRA 1">SIERRA 1 (Foránea F-)</option>
+                <option value="SIERRA 2">SIERRA 2 (Foránea F-)</option>
+                <option value="COSTA">COSTA (Foránea F-)</option>
+                <option value="DESIERTO">DESIERTO (Foránea F-)</option>
+                <option value="GUAYMAS">GUAYMAS (Foránea F-)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="font-bold text-slate-700 block mb-1">CHOFER ASIGNADO *</label>
+            <input type="text" id="inChofer" placeholder="Ej. CARLOS EDMUNDO" class="w-full border border-slate-300 rounded px-2 py-1.5 bg-blue-50/50 font-bold uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">UNIDAD *</label>
+            <input type="text" id="inUnidad" placeholder="Ej. 88" class="w-full border border-slate-300 rounded px-2 py-1.5 bg-blue-50/50 font-bold text-center">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">TEL. CHOFER</label>
+            <input type="text" id="inTelefono" placeholder="Opcional" class="w-full border border-slate-300 rounded px-2 py-1.5">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">AUXILIAR</label>
+            <input type="text" id="inAuxiliar" value="NA" class="w-full border border-slate-300 rounded px-2 py-1.5 uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">EMBARQUE</label>
+            <input type="text" id="inEmbarque" placeholder="Ej. JUAN MENDOZA" class="w-full border border-slate-300 rounded px-2 py-1.5 uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">ELABORÓ (PERFIL)</label>
+            <input type="text" id="inElaboro" readonly class="w-full border border-slate-300 rounded px-2 py-1.5 uppercase bg-slate-100 font-bold text-slate-600">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">HORA SALIDA</label>
+            <input type="time" id="inHoraSalida" class="w-full border border-slate-300 rounded px-2 py-1.5">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">HORA REGRESO</label>
+            <input type="time" id="inHoraRegreso" class="w-full border border-slate-300 rounded px-2 py-1.5">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1"># DIABLITOS</label>
+            <input type="number" id="inDiablitos" value="1" min="0" class="w-full border border-slate-300 rounded px-2 py-1.5 text-center font-bold">
+          </div>
+
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">TERMINAL BANCARIA</label>
+            <input type="text" id="inTerminal" value="1" class="w-full border border-slate-300 rounded px-2 py-1.5 text-center font-bold">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">PATÍN</label>
+            <input type="number" id="inPatin" value="0" min="0" class="w-full border border-slate-300 rounded px-2 py-1.5 text-center">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">TARIMAS AZULES</label>
+            <input type="text" id="inTarimasAzules" value="N/A" class="w-full border border-slate-300 rounded px-2 py-1.5 text-center uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">TARIMAS CAFÉS</label>
+            <input type="number" id="inTarimasCafes" value="0" min="0" class="w-full border border-slate-300 rounded px-2 py-1.5 text-center">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">TARJETA EMPRESARIAL</label>
+            <input type="text" id="inTarjetaEmp" value="N/A" class="w-full border border-slate-300 rounded px-2 py-1.5 text-center uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">VITAFILM / PÓLIZA</label>
+            <div class="flex gap-1">
+              <input type="text" id="inVitafilm" value="N/A" class="w-1/2 border border-slate-300 rounded px-1 py-1.5 text-center uppercase">
+              <input type="text" id="inPoliza" value="N/A" class="w-1/2 border border-slate-300 rounded px-1 py-1.5 text-center uppercase">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen en Vivo -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div class="bg-cyblue text-white p-3 rounded-xl shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase text-blue-100"># Facturas</div>
+          <div id="liveFacturas" class="text-2xl font-black">0</div>
+        </div>
+        <div class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase text-slate-500"># Clientes</div>
+          <input type="number" id="liveClientes" value="0" class="text-xl font-black text-center w-full border-b border-dashed border-slate-300 focus:outline-none">
+        </div>
+        <div class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase text-slate-500"># Ptos Entrega</div>
+          <input type="number" id="livePuntos" value="0" class="text-xl font-black text-center w-full border-b border-dashed border-slate-300 focus:outline-none">
+        </div>
+        <div class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase text-slate-500">Total Kilos</div>
+          <div id="liveKilos" class="text-xl font-black text-cyblue">0.00</div>
+        </div>
+        <div class="bg-white border border-slate-200 p-3 rounded-xl shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase text-slate-500">Total Bultos</div>
+          <div id="liveBultos" class="text-xl font-black text-slate-800">0</div>
+        </div>
+        <div class="bg-cyred text-white p-3 rounded-xl shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase text-red-100">Importe Total</div>
+          <div id="liveImporte" class="text-lg font-black">$0.00</div>
+        </div>
+      </div>
+
+      <!-- Agregar Factura Manual -->
+      <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('formFacturaManual').classList.toggle('hidden')">
+          <span class="text-xs font-bold text-cyblue uppercase">➕ Agregar Factura Manualmente (Si no está en el reporte)</span>
+          <span class="text-xs text-slate-400">Desplegar ▼</span>
+        </div>
+        <div id="formFacturaManual" class="hidden mt-3 pt-3 border-t grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 text-xs items-end">
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">N° FACTURA *</label>
+            <input type="text" id="manFactura" placeholder="Ej. CRM999" class="w-full border rounded px-2 py-1.5 uppercase font-mono">
+          </div>
+          <div class="col-span-2">
+            <label class="font-bold text-slate-600 block mb-1">RAZÓN SOCIAL *</label>
+            <input type="text" id="manRazon" placeholder="Cliente" class="w-full border rounded px-2 py-1.5 uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">SUCURSAL</label>
+            <input type="text" id="manSucursal" placeholder="Colonia" class="w-full border rounded px-2 py-1.5 uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">ZONA</label>
+            <input type="text" id="manZona" value="HMO ZONA 1" class="w-full border rounded px-2 py-1.5 uppercase">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">PAGO</label>
+            <select id="manPago" class="w-full border rounded px-2 py-1.5 font-bold">
+              <option value="CONTADO">CONTADO</option>
+              <option value="CRÉDITO">CRÉDITO</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-1">
+            <div><label class="font-bold text-slate-600 block mb-1">KILOS</label><input type="number" step="0.01" id="manKilos" value="0" class="w-full border rounded px-1 py-1.5 text-right"></div>
+            <div><label class="font-bold text-slate-600 block mb-1">BULTOS</label><input type="number" id="manBultos" value="1" class="w-full border rounded px-1 py-1.5 text-right"></div>
+          </div>
+          <div class="flex gap-1 items-end">
+            <div class="w-full"><label class="font-bold text-slate-600 block mb-1">IMPORTE ($)</label><input type="number" step="0.01" id="manImporte" placeholder="0.00" class="w-full border rounded px-2 py-1.5 text-right font-bold"></div>
+            <button onclick="agregarFacturaManual()" class="bg-cyblue hover:bg-cyblueDark text-white font-bold px-3 py-1.5 rounded h-[30px]">+ Añadir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla Selector -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <label class="text-xs font-bold uppercase text-cyblue">Zona:</label>
+            <select id="filtroZonaArmar" onchange="renderFacturasDisponibles()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold bg-slate-50">
+              <option value="TODAS">-- TODAS LAS ZONAS --</option>
+            </select>
+            <input type="text" id="buscadorFacturasArmar" onkeyup="renderFacturasDisponibles()" placeholder="Buscar factura o cliente..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs w-56">
+            <label class="flex items-center gap-1 text-xs text-slate-600 ml-1 cursor-pointer">
+              <input type="checkbox" id="ocultarAsignadas" checked onchange="renderFacturasDisponibles()"> Ocultar ya asignadas
+            </label>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <button onclick="seleccionarVisibles(true)" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-semibold">+ Marcar filtradas</button>
+            <button onclick="seleccionarVisibles(false)" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-semibold">Limpiar</button>
+            <button onclick="cambiarTab('tab-ordenar')" class="bg-cyblue hover:bg-cyblueDark text-white text-xs font-bold px-4 py-2 rounded-lg shadow">✏️ Ordenar / Editar</button>
+            <button onclick="guardarRuta()" id="btnGuardarRuta" class="bg-cyred hover:bg-cyredDark text-white text-xs font-bold px-5 py-2 rounded-lg shadow">💾 Guardar Hoja de Ruta</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-96 border border-slate-200 rounded-lg">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 border-b">
+              <tr>
+                <th class="p-2 text-center w-20">Sel.</th>
+                <th class="p-2">Factura</th>
+                <th class="p-2">Razón Social</th>
+                <th class="p-2">Sucursal / Colonia</th>
+                <th class="p-2 text-center">Zona</th>
+                <th class="p-2 text-center">Pago</th>
+                <th class="p-2 text-right">Kilos</th>
+                <th class="p-2 text-right">Bultos</th>
+                <th class="p-2 text-right">Importe</th>
+                <th class="p-2 text-center">Estatus</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyFacturasDisponibles" class="divide-y divide-slate-200">
+              <tr><td colspan="10" class="p-4 text-center text-slate-400">Cargando facturas...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANTALLA 2: ORDENAR Y EDITAR -->
+    <section id="tab-ordenar" class="no-print hidden space-y-4">
+      <div class="bg-white p-4 rounded-xl shadow-sm border-t-4 border-cyred border border-slate-200">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-3 mb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Ordenar y Editar Información de Clientes</h2>
+            <p class="text-xs text-slate-500">Puedes corregir cualquier campo directamente sobre las casillas de la tabla.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="ordenarPorCampo('sucursal')" class="text-xs bg-slate-100 px-3 py-1.5 rounded-lg border font-semibold">Agrupar por Sucursal</button>
+            <button onclick="guardarRuta()" class="bg-cyred hover:bg-cyredDark text-white text-xs font-bold px-5 py-2 rounded-lg shadow">💾 Guardar Cambios e Imprimir</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-cyblue text-white uppercase font-bold text-[11px]">
+              <tr>
+                <th class="p-2 text-center w-14">Orden</th>
+                <th class="p-2 text-center w-20">Mover</th>
+                <th class="p-2 w-28">N° Factura</th>
+                <th class="p-2 w-56">Razón Social (Editable)</th>
+                <th class="p-2 w-44">Sucursal (Editable)</th>
+                <th class="p-2 w-28 text-center">Zona</th>
+                <th class="p-2 w-24 text-center">Pago</th>
+                <th class="p-2 w-20 text-right">Kilos</th>
+                <th class="p-2 w-16 text-right">Bultos</th>
+                <th class="p-2 w-28 text-right">Importe</th>
+                <th class="p-2 w-32">Comentarios</th>
+                <th class="p-2 text-center w-12">Quitar</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyOrdenarRuta" class="divide-y divide-slate-200">
+              <tr><td colspan="12" class="p-6 text-center text-slate-400">No hay facturas seleccionadas.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANTALLA 3: CARGAR EXCEL -->
+    <section id="tab-carga" class="no-print hidden">
+      <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border-t-4 border-cyblue border border-slate-200 mt-4">
+        <h2 class="text-base font-bold text-cyblue mb-1">Cargar Reporte Excel</h2>
+        <p class="text-xs text-slate-600 mb-4">Selecciona el archivo <b>ReporteLogistica.xlsx</b>.</p>
+        <div class="border-2 border-dashed border-cyblue/40 rounded-xl p-6 text-center bg-blue-50/30">
+          <input type="file" id="inputExcelFile" accept=".xlsx,.xls,.csv" class="block w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:bg-cyblue file:text-white cursor-pointer">
+        </div>
+        <div id="estadoCargaExcel" class="mt-4 text-xs font-semibold text-center hidden"></div>
+        <div class="mt-5 flex justify-end">
+          <button onclick="procesarYSubirExcel()" class="bg-cyred text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow">🚀 Sustituir Reporte Temporal</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANTALLA 4: HISTORIAL E IMPRESIÓN -->
+    <section id="tab-historial">
+      <div class="bg-white p-4 rounded-xl shadow-sm border-t-4 border-cyblue border border-slate-200 mb-5 no-print">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
+          <div>
+            <h2 class="text-sm font-bold uppercase text-cyblue">Historial de Hojas de Ruta</h2>
+            <p class="text-xs text-slate-500">Visualiza para imprimir u obtén el botón de edición</p>
+          </div>
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <input type="text" id="inputBuscarHistorial" onkeyup="filtrarHistorial()" placeholder="Buscar Folio, Chofer..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs w-full md:w-64">
+            <button onclick="window.print()" class="bg-cyred text-white text-xs font-bold px-4 py-2 rounded-lg shadow">🖨️ Imprimir Horizontal</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-48 border border-slate-200 rounded-lg">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 border-b">
+              <tr>
+                <th class="p-2">Folio</th>
+                <th class="p-2">Fecha</th>
+                <th class="p-2">Ruta / Turno</th>
+                <th class="p-2 text-center">Unidad</th>
+                <th class="p-2">Chofer</th>
+                <th class="p-2">Elaboró</th>
+                <th class="p-2 text-center">Facturas</th>
+                <th class="p-2 text-center">Clientes</th>
+                <th class="p-2 text-center">Ptos Ent.</th>
+                <th class="p-2 text-right">Kilos</th>
+                <th class="p-2 text-right">Bultos</th>
+                <th class="p-2 text-right">Importe</th>
+                <th class="p-2 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHistorialRutas" class="divide-y divide-slate-200">
+              <tr><td colspan="13" class="p-3 text-center text-slate-400">Cargando histórico...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FORMATO DE IMPRESIÓN HORIZONTAL -->
+      <div id="contenedorHojaImpresion" class="bg-white p-4 rounded-xl shadow-md border border-slate-300 print-sheet print-container hidden">
+        <div class="print-header-bar">
+          <div class="flex items-center gap-3 px-3 py-1.5">
+            <div class="bg-cy-red font-black px-2.5 py-1 text-xs tracking-wider border border-white/40">CY ALIMENTOS</div>
+            <div>
+              <div class="font-black text-xs tracking-wide uppercase">HOJA DE RUTA, CONTROL DE REPARTO Y LIQUIDACIÓN DE COBRANZA</div>
+              <div class="text-[9px] font-semibold opacity-90">DEPARTAMENTO DE TRÁFICO Y LOGÍSTICA</div>
+            </div>
+          </div>
+          <div class="folio-highlight-box">
+            <span class="text-[8px] font-bold uppercase tracking-widest leading-none">FOLIO HOJA DE RUTA</span>
+            <span id="pFolioGrande" class="text-[19px] font-black tracking-wider leading-tight mt-0.5">L-10181</span>
+          </div>
+        </div>
+
+        <table class="print-grid">
+          <colgroup>
+            <col style="width: 3.5%;"><col style="width: 8.5%;"><col style="width: 23%;"><col style="width: 15%;"><col style="width: 9%;"><col style="width: 7.5%;"><col style="width: 5.5%;"><col style="width: 5.5%;"><col style="width: 5.5%;"><col style="width: 5.5%;"><col style="width: 4.5%;"><col style="width: 7%;">
+          </colgroup>
+          <tbody>
+            <tr>
+              <td colspan="2" class="bg-cy-gray text-right font-bold">ID RUTA:</td>
+              <td class="bg-cy-light font-black text-center text-[10.5px]" id="pFolioTabla">L-10181</td>
+              <td class="bg-cy-gray text-right font-bold">FECHA:</td>
+              <td class="bg-cy-light text-center font-bold" id="pFecha">--/--/----</td>
+              <td class="bg-cy-gray text-right font-bold">RUTA:</td>
+              <td colspan="2" class="bg-cy-light text-center font-bold uppercase text-[9px]" id="pTurno">LOCAL MATUTINA</td>
+              <td class="bg-cy-gray text-right font-bold">UNIDAD:</td>
+              <td class="bg-cy-light text-center font-black text-[10.5px]" id="pUnidad">--</td>
+              <td class="bg-cy-gray text-right font-bold"># DIABLITOS:</td>
+              <td class="bg-cy-light text-center font-bold" id="pDiablitos">1</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="bg-cy-gray text-right font-bold">CHOFER:</td>
+              <td colspan="2" class="bg-cy-light font-bold uppercase" id="pChofer">--</td>
+              <td class="bg-cy-gray text-right font-bold">H. SALIDA:</td>
+              <td class="text-center font-bold" id="pHoraSalida"></td>
+              <td class="bg-cy-gray text-right font-bold"># FACTURAS:</td>
+              <td class="bg-cy-light text-center font-bold" id="pFacturas">0</td>
+              <td class="bg-cy-gray text-right font-bold">KILOS:</td>
+              <td class="bg-cy-light text-right font-bold" id="pKilos">0</td>
+              <td class="bg-cy-gray text-right font-bold">TERMINAL:</td>
+              <td class="bg-cy-light text-center font-bold" id="pTerminal">1</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="bg-cy-gray text-right font-bold">AUXILIAR:</td>
+              <td colspan="2" class="font-semibold uppercase" id="pAuxiliar">NA</td>
+              <td class="bg-cy-gray text-right font-bold">H. REGRESO:</td>
+              <td class="text-center font-bold" id="pHoraRegreso"></td>
+              <td class="bg-cy-gray text-right font-bold"># CLIENTES:</td>
+              <td class="bg-cy-light text-center font-bold" id="pClientes">0</td>
+              <td class="bg-cy-gray text-right font-bold">BULTOS:</td>
+              <td class="bg-cy-light text-right font-bold" id="pBultos">0</td>
+              <td class="bg-cy-gray text-right font-bold">PATÍN:</td>
+              <td class="text-center font-bold" id="pPatin">0</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="bg-cy-gray text-right font-bold">EMBARQUE:</td>
+              <td class="font-semibold uppercase" id="pEmbarque">--</td>
+              <td class="text-[8.5px]"><b>TEL:</b> <span id="pTelefono"></span></td>
+              <td class="bg-cy-gray text-right font-bold">TARJETA EMP:</td>
+              <td class="text-center font-semibold" id="pTarjetaEmp">N/A</td>
+              <td class="bg-cy-gray text-right font-bold"># PTOS ENT:</td>
+              <td class="bg-cy-light text-center font-bold" id="pPuntos">0</td>
+              <td class="bg-cy-gray text-right font-bold">TAR. AZULES:</td>
+              <td class="text-center font-semibold" id="pTarimasAzules">N/A</td>
+              <td class="bg-cy-gray text-right font-bold">TAR. CAFÉS:</td>
+              <td class="text-center font-semibold" id="pTarimasCafes">0</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="bg-cy-gray text-right font-bold">ELABORÓ:</td>
+              <td class="font-semibold uppercase" id="pElaboro">LUIS ESPINOZA</td>
+              <td class="text-[8.5px]"><b>PÓLIZA:</b> <span id="pPoliza">N/A</span></td>
+              <td class="bg-cy-gray text-right font-bold">VITAFILM:</td>
+              <td class="text-center font-semibold" id="pVitafilm">N/A</td>
+              <td colspan="4" class="bg-cy-gray text-right font-bold">COSTO PROMEDIO POR KILO TRANSPORTADO:</td>
+              <td colspan="2" class="bg-cy-light text-right font-bold" id="pCostoKilo">$0.00</td>
+            </tr>
+            <tr class="bg-cy-blue font-bold text-center">
+              <td rowspan="2">N°</td><td rowspan="2">N° FACTURA</td><td colspan="3">DATOS DEL CLIENTE / DESTINO</td><td rowspan="2">MÉTODO PAGO</td><td colspan="4">CONTROL DE PAGOS Y LIQUIDACIÓN</td><td rowspan="2">OBS / COMENT.</td><td rowspan="2">IMPORTE</td>
+            </tr>
+            <tr class="bg-cy-blue font-bold text-center">
+              <td>RAZÓN SOCIAL</td><td>SUCURSAL / COLONIA</td><td>LOCALIDAD</td><td>EFECTIVO</td><td>TRANSFER</td><td>CHEQUE</td><td>TARJETA</td>
+            </tr>
+          </tbody>
+          <tbody id="tbodyImpresionFacturas"></tbody>
+          <tfoot>
+            <tr class="bg-cy-gray font-bold">
+              <td colspan="5" class="text-right uppercase">Totales:</td>
+              <td class="text-center" id="pTotalBultosFoot">0 BULTOS</td>
+              <td></td><td></td><td></td><td></td>
+              <td class="text-right">TOTAL:</td>
+              <td class="bg-cy-light text-right font-black" id="pTotalImporte">$0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- SECCIÓN DE COMENTARIOS GENERALES EN FÍSICO -->
+        <div class="comentarios-box">
+          <div class="text-[8px] font-bold uppercase text-slate-800">COMENTARIOS GENERALES / OBSERVACIONES EN RUTA:</div>
+          <div class="h-6"></div>
+        </div>
+
+        <!-- 4 FIRMAS SOLICITADAS -->
+        <div class="grid grid-cols-4 gap-6 mt-6 mb-2 text-center text-[8.5px] font-bold">
+          <div><div class="border-t border-black pt-1 uppercase">NOMBRE Y FIRMA<br>SUPERVISOR DE LOGÍSTICA</div></div>
+          <div><div class="border-t border-black pt-1 uppercase">NOMBRE Y FIRMA<br>CHOFER</div></div>
+          <div><div class="border-t border-black pt-1 uppercase">NOMBRE Y FIRMA<br>AUDITOR</div></div>
+          <div><div class="border-t border-black pt-1 uppercase">NOMBRE Y FIRMA<br>LIQUIDACIÓN DE RUTA</div></div>
+        </div>
+
+        <!-- AVISO DE RESPONSABILIDAD COMPLETO -->
+        <div class="legal-box">
+          <b>AVISO DE RESPONSABILIDAD:</b> YO, CHOFER ASIGNADO A LA RUTA, RECIBO DE CONFORMIDAD LOS SIGUIENTES ACTIVOS Y RESPONSABILIDADES: <b>2) EQUIPO Y HERRAMIENTAS</b>, TALES COMO LA UNIDAD DE TRANSPORTE EN LAS CONDICIONES DESCRITAS EN EL CHECKLIST DE SALIDA, INCLUYENDO EQUIPO DE SEGURIDAD VIAL Y DE PROTECCIÓN PERSONAL, PATÍN, DIABLITOS, CELULAR, CAPUCHONES TERMINCOS, TERMINAL BANCARIA, DE LOS CUALES SOY RESPONSABLE DE RETORNAR DE FORMA INTEGRA, CON EL DESGASTE ÚNICAMENTE DEL USO NATURAL, SIN DAÑOS A SU ESTÉTICA NI A SU FUNCIONAMIENTO OCASIONADOS POR MAL USO, NI ACCIDENTAL NI DOLOSO. <b>3) MATERIALES</b>, TALES COMO TARIMAS Y DOCUMENTACIÓN DE LA UNIDAD Y DE LA RUTA (PLACAS, TARJETA DE CIRCULACIÓN, PÓLIZA DE SEGURO, HOJA DE RUTA, HOJA DE SERVICIO, ETC.), LOS CUALES MANTENDRE INTEGROS EN SU LUGAR CORRESPONDIENTE. <b>4) DINERO</b>, TANTO DE LOS VIÁTICOS, COMO DE LA TARJETA EMPRESARIAL Y DE LOS PAGOS DE LOS PROVEEDORES, POR LO QUE ME HAGO RESPONSABLE DE HACER USO ÚNICAMENTE EN CONCEPTOS Y MÉTODOS AUTORIZADOS, ASÍ COM COMPROBAR DEBIDAMENTE SIN FALTANTES, A MÁS TARDAR EL DÍA INMEDIATO SIGUIENTE A MI REGRESO DE LA RUTA, DENTRO DE LOS HORARIOS ESTABLECIDOS POR LA EMPRESA. ASÍ MISMO, SOY CONCIENTE Y ME HAGO RESPONSABLE POR LAS MULTAS O ACCIDENTES QUE PROVOQUÉ POR MI PROPIA NEGLIGENCIA O EN CASO DE QUE SE ME ENCUENTRE REALIZANDO ACTOS ILÍCITOS. EN CASO DE INCUMPLIMIENTO DE ESTAS RESPONSABILIDADES YA SEA POR DESCUIDO O POR FALTA DE PROBIDAD U HONRADEZ, ME SUJETO A LAS ACCIONES O SANCIONES EN MATERIA LABORAL Y PENAL QUE DETERMINE LA EMPRESA EN BASE A LA LEY FEDERAL DEL TRABAJO, EL REGLAMENTO INTERNO Y EL CONTRATO INDIVIDUAL.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // URL DE LA API DE APPS SCRIPT ORIGINAL
+    const API_URL = "https://script.google.com/macros/s/AKfycbyYkM7EB0j0TcIKAGRxeNAQd_Pi9BdFU0QzpGnKFRNYZj559UXeAlk8Bmu5ZwhClj3g/exec";
+
+    let facturasRaw = [];
+    let itemsRutaActiva = [];
+    let folioEnEdicion = null;
+    let historialRutas = [];
+    let dragSrcIndex = null;
+
+    // CLIENTE API IDÉNTICO AL FUNCIONAL DE BETA 0.7
+    async function apiCall(action, payload = null, metodo = 'POST') {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 28000);
+
+      try {
+        let options = {
+          method: metodo,
+          signal: controller.signal
+        };
+
+        let url = API_URL;
+        if (metodo === 'GET') {
+          const u = new URL(API_URL);
+          u.searchParams.set('action', action);
+          if (payload) {
+            Object.keys(payload).forEach(k => u.searchParams.set(k, payload[k]));
+          }
+          url = u.toString();
+        } else {
+          options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+          options.body = JSON.stringify({ action: action, payload: payload });
+        }
+
+        const res = await fetch(url, options);
+        clearTimeout(timeoutId);
+        return await res.json();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    }
+
+    window.onload = function() {
+      document.getElementById('inFecha').valueAsDate = new Date();
+      
+      const perfilGuardado = localStorage.getItem('cy_perfil_usuario') || 'LUIS ESPINOZA';
+      const sel = document.getElementById('selectPerfilActivo');
+      if (sel) sel.value = perfilGuardado;
+      document.getElementById('inElaboro').value = perfilGuardado;
+
+      cargarDatosIniciales();
+    };
+
+    function cambiarPerfilActivo(nuevoPerfil) {
+      localStorage.setItem('cy_perfil_usuario', nuevoPerfil);
+      document.getElementById('inElaboro').value = nuevoPerfil;
+    }
+
+    function obtenerUsuarioActivo() {
+      const sel = document.getElementById('selectPerfilActivo');
+      return sel ? sel.value : (localStorage.getItem('cy_perfil_usuario') || 'LUIS ESPINOZA');
+    }
+
+    function esRutaForanea(valorRuta) {
+      const val = (valorRuta || '').toUpperCase();
+      const foraneas = ['SONORA SUR', 'SONORA NORTE', 'SIERRA 1', 'SIERRA 2', 'COSTA', 'DESIERTO', 'GUAYMAS', 'FORÁNEA'];
+      return foraneas.some(f => val.includes(f));
+    }
+
+    function actualizarEtiquetaTipoFolio() {
+      const turno = document.getElementById('inTurno').value;
+      const lbl = document.getElementById('indicadorTipoFolio');
+      const esFor = esRutaForanea(turno);
+
+      if (folioEnEdicion) {
+        lbl.innerText = 'Editando Folio: ' + folioEnEdicion;
+        lbl.className = 'text-[11px] bg-amber-100 text-amber-900 border border-amber-400 font-bold px-2.5 py-0.5 rounded';
+      } else if (esFor) {
+        lbl.innerText = 'Folio Automático: Foránea (F-4310+)';
+        lbl.className = 'text-[11px] bg-red-50 text-cyred border border-cyred/30 font-bold px-2.5 py-0.5 rounded';
+      } else {
+        lbl.innerText = 'Folio Automático: Local (L-10180+)';
+        lbl.className = 'text-[11px] bg-blue-50 text-cyblue border border-cyblue/30 font-bold px-2.5 py-0.5 rounded';
+      }
+    }
+
+    function cambiarTab(tabId) {
+      ['tab-armar', 'tab-ordenar', 'tab-carga', 'tab-historial'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+        const btn = document.getElementById('btn-' + id);
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-cyblueDark text-white hover:bg-white/20 transition flex items-center gap-1';
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-cyblue shadow-sm transition flex items-center gap-1';
+
+      if (tabId === 'tab-ordenar') renderTablaOrdenar();
+    }
+
+    async function cargarDatosIniciales(mostrarAviso = false) {
+      try {
+        const res = await apiCall('getDatosIniciales', null, 'GET');
+        if (res && res.ok) {
+          facturasRaw = res.facturas || [];
+          historialRutas = res.rutas || [];
+          poblarSelectZonas();
+          renderFacturasDisponibles();
+          renderTablaHistorial(historialRutas);
+          if (mostrarAviso) alert('✅ Sincronizado correctamente con Google Sheets.');
+        }
+      } catch (err) {
+        console.error('Error al sincronizar datos:', err);
+      }
+    }
+
+    function poblarSelectZonas() {
+      const select = document.getElementById('filtroZonaArmar');
+      const zonas = [...new Set(facturasRaw.map(f => f.zona))].sort();
+      select.innerHTML = '<option value="TODAS">-- TODAS LAS ZONAS (' + facturasRaw.length + ') --</option>' +
+        zonas.map(z => `<option value="${z}">${z}</option>`).join('');
+    }
+
+    function buscarIndiceEnRutaActiva(numFactura) {
+      return itemsRutaActiva.findIndex(item => String(item.factura).trim() === String(numFactura).trim());
+    }
+
+    function obtenerFacturasFiltradas() {
+      const zona = document.getElementById('filtroZonaArmar').value;
+      const q = document.getElementById('buscadorFacturasArmar').value.toLowerCase();
+      const ocultarAsig = document.getElementById('ocultarAsignadas').checked;
+
+      return facturasRaw.filter(f => {
+        const estaSeleccionada = buscarIndiceEnRutaActiva(f.factura) !== -1;
+        if (ocultarAsig && f.folioAsignado !== '' && !estaSeleccionada) return false;
+        if (zona !== 'TODAS' && f.zona !== zona) return false;
+        if (q && !(f.factura.toLowerCase().includes(q) || f.razonSocial.toLowerCase().includes(q))) return false;
+        return true;
+      });
+    }
+
+    function renderFacturasDisponibles() {
+      const tbody = document.getElementById('tbodyFacturasDisponibles');
+      const filtradas = obtenerFacturasFiltradas();
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-slate-400">No hay facturas disponibles.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtradas.map(f => {
+        const posIdx = buscarIndiceEnRutaActiva(f.factura);
+        const isSelected = posIdx !== -1;
+        const itemActual = isSelected ? itemsRutaActiva[posIdx] : f;
+        const ordenBadge = isSelected ? `<span class="bg-cyred text-white font-black px-1.5 py-0.5 rounded-full text-[10px] ml-1">${posIdx + 1}°</span>` : '';
+        const estadoBadge = f.folioAsignado ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">${f.folioAsignado}</span>` : `<span class="bg-blue-50 text-cyblue px-2 py-0.5 rounded text-[10px] font-semibold">Disponible</span>`;
+
+        return `
+          <tr class="hover:bg-blue-50/40 ${isSelected ? 'bg-blue-50/80 font-semibold' : ''}">
+            <td class="p-2 text-center flex items-center justify-center gap-1">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleFactura('${f.factura}', this.checked)" class="w-4 h-4 accent-cyblue cursor-pointer">
+              ${ordenBadge}
+            </td>
+            <td class="p-2 font-mono font-bold">${itemActual.factura}</td>
+            <td class="p-2">${itemActual.razonSocial}</td>
+            <td class="p-2 text-slate-600">${itemActual.sucursal}</td>
+            <td class="p-2 text-center"><span class="bg-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">${itemActual.zona}</span></td>
+            <td class="p-2 text-center font-bold text-[10px]">${itemActual.pago}</td>
+            <td class="p-2 text-right">${Number(itemActual.kilos).toFixed(2)}</td>
+            <td class="p-2 text-right font-semibold">${itemActual.bultos}</td>
+            <td class="p-2 text-right font-mono font-bold">$${Number(itemActual.importe).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+            <td class="p-2 text-center">${estadoBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function toggleFactura(numFactura, estado) {
+      const idx = buscarIndiceEnRutaActiva(numFactura);
+      if (estado && idx === -1) {
+        const original = facturasRaw.find(f => String(f.factura).trim() === String(numFactura).trim());
+        if (original) itemsRutaActiva.push({ ...original, comentarios: '' });
+      } else if (!estado && idx !== -1) {
+        itemsRutaActiva.splice(idx, 1);
+      }
+      recalcularTotalesEnVivo();
+      renderFacturasDisponibles();
+    }
+
+    function seleccionarVisibles(marcar) {
+      obtenerFacturasFiltradas().forEach(f => {
+        const idx = buscarIndiceEnRutaActiva(f.factura);
+        if (marcar && idx === -1) itemsRutaActiva.push({ ...f, comentarios: '' });
+        else if (!marcar && idx !== -1) itemsRutaActiva.splice(idx, 1);
+      });
+      recalcularTotalesEnVivo();
+      renderFacturasDisponibles();
+    }
+
+    async function agregarFacturaManual() {
+      const fac = document.getElementById('manFactura').value.trim().toUpperCase();
+      const razon = document.getElementById('manRazon').value.trim().toUpperCase();
+      if (!fac || !razon) { alert('Ingresa N° de Factura y Razón Social.'); return; }
+
+      const nueva = {
+        factura: fac,
+        razonSocial: razon,
+        sucursal: document.getElementById('manSucursal').value.trim().toUpperCase() || razon,
+        colonia: '',
+        zona: document.getElementById('manZona').value.trim().toUpperCase() || 'HMO ZONA 1',
+        pago: document.getElementById('manPago').value,
+        kilos: parseFloat(document.getElementById('manKilos').value) || 0,
+        bultos: parseInt(document.getElementById('manBultos').value, 10) || 1,
+        importe: parseFloat(document.getElementById('manImporte').value) || 0,
+        folioAsignado: '',
+        comentarios: ''
+      };
+
+      try {
+        const res = await apiCall('insertarFacturaManual', nueva, 'POST');
+        if (res && res.ok) {
+          facturasRaw.unshift(nueva);
+          itemsRutaActiva.push({ ...nueva });
+          document.getElementById('manFactura').value = '';
+          document.getElementById('manRazon').value = '';
+          document.getElementById('manSucursal').value = '';
+          poblarSelectZonas();
+          recalcularTotalesEnVivo();
+          renderFacturasDisponibles();
+          renderTablaOrdenar();
+        } else {
+          alert('Error al insertar: ' + (res ? res.msg : 'Desconocido'));
+        }
+      } catch (err) {
+        alert('Error de conexión: ' + err.message);
+      }
+    }
+
+    function recalcularTotalesEnVivo() {
+      let kilos = 0, bultos = 0, importe = 0;
+      const clientes = new Set(), puntos = new Set();
+      itemsRutaActiva.forEach(f => {
+        kilos += Number(f.kilos) || 0;
+        bultos += Number(f.bultos) || 0;
+        importe += Number(f.importe) || 0;
+        clientes.add(String(f.razonSocial).trim());
+        puntos.add(String(f.sucursal || f.razonSocial).trim());
+      });
+
+      document.getElementById('liveFacturas').innerText = itemsRutaActiva.length;
+      document.getElementById('badgeOrdenCount').innerText = itemsRutaActiva.length;
+      document.getElementById('liveClientes').value = clientes.size;
+      document.getElementById('livePuntos').value = puntos.size;
+      document.getElementById('liveKilos').innerText = kilos.toLocaleString('es-MX', {minimumFractionDigits: 2});
+      document.getElementById('liveBultos').innerText = bultos;
+      document.getElementById('liveImporte').innerText = '$' + importe.toLocaleString('es-MX', {minimumFractionDigits: 2});
+    }
+
+    function renderTablaOrdenar() {
+      const tbody = document.getElementById('tbodyOrdenarRuta');
+      if (itemsRutaActiva.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" class="p-6 text-center text-slate-400">No hay facturas seleccionadas.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = itemsRutaActiva.map((f, index) => `
+        <tr draggable="true" ondragstart="dragSrcIndex=${index}" ondragover="event.preventDefault()" ondrop="handleDrop(event, ${index})" class="hover:bg-blue-50/40">
+          <td class="p-1.5 text-center"><input type="number" min="1" max="${itemsRutaActiva.length}" value="${index + 1}" onchange="cambiarPosicionManual(${index}, this.value)" class="w-11 text-center font-black border border-cyblue rounded bg-blue-50 text-cyblue"></td>
+          <td class="p-1.5 text-center whitespace-nowrap">
+            <button onclick="moverItem(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30"' : 'class="bg-slate-200 px-1 rounded font-bold"'}>⬆️</button>
+            <button onclick="moverItem(${index}, 1)" ${index === itemsRutaActiva.length - 1 ? 'disabled class="opacity-30"' : 'class="bg-slate-200 px-1 rounded font-bold"'}>⬇️</button>
+          </td>
+          <td class="p-1.5"><input type="text" value="${f.factura}" onchange="editarCampoItem(${index}, 'factura', this.value)" class="w-full border rounded px-1.5 py-1 font-mono font-bold text-cyblue"></td>
+          <td class="p-1.5"><input type="text" value="${f.razonSocial}" onchange="editarCampoItem(${index}, 'razonSocial', this.value)" class="w-full border rounded px-1.5 py-1 font-semibold uppercase"></td>
+          <td class="p-1.5"><input type="text" value="${f.sucursal || ''}" onchange="editarCampoItem(${index}, 'sucursal', this.value)" class="w-full border rounded px-1.5 py-1 uppercase"></td>
+          <td class="p-1.5"><input type="text" value="${f.zona || ''}" onchange="editarCampoItem(${index}, 'zona', this.value)" class="w-full border rounded px-1.5 py-1 text-center font-bold uppercase"></td>
+          <td class="p-1.5">
+            <select onchange="editarCampoItem(${index}, 'pago', this.value)" class="w-full border rounded px-1 py-1 font-bold text-[11px]">
+              <option value="CONTADO" ${String(f.pago).toUpperCase().includes('CONTADO') ? 'selected' : ''}>CONTADO</option>
+              <option value="CRÉDITO" ${!String(f.pago).toUpperCase().includes('CONTADO') ? 'selected' : ''}>CRÉDITO</option>
+            </select>
+          </td>
+          <td class="p-1.5"><input type="number" step="0.01" value="${Number(f.kilos) || 0}" onchange="editarCampoItem(${index}, 'kilos', this.value)" class="w-full border rounded px-1.5 py-1 text-right"></td>
+          <td class="p-1.5"><input type="number" value="${Number(f.bultos) || 0}" onchange="editarCampoItem(${index}, 'bultos', this.value)" class="w-full border rounded px-1.5 py-1 text-right font-bold"></td>
+          <td class="p-1.5"><input type="number" step="0.01" value="${Number(f.importe) || 0}" onchange="editarCampoItem(${index}, 'importe', this.value)" class="w-full border rounded px-1.5 py-1 text-right font-mono font-bold"></td>
+          <td class="p-1.5"><input type="text" value="${f.comentarios || ''}" onchange="editarCampoItem(${index}, 'comentarios', this.value)" class="w-full border rounded px-1.5 py-1 uppercase"></td>
+          <td class="p-1.5 text-center"><button onclick="quitarDeOrden(${index})" class="text-cyred font-bold px-2">✕</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function editarCampoItem(index, campo, valor) {
+      if (!itemsRutaActiva[index]) return;
+      if (campo === 'kilos' || campo === 'importe') itemsRutaActiva[index][campo] = parseFloat(valor) || 0;
+      else if (campo === 'bultos') itemsRutaActiva[index][campo] = parseInt(valor, 10) || 0;
+      else itemsRutaActiva[index][campo] = String(valor).toUpperCase();
+      recalcularTotalesEnVivo();
+    }
+
+    function moverItem(index, dir) {
+      const nuevo = index + dir;
+      if (nuevo < 0 || nuevo >= itemsRutaActiva.length) return;
+      const temp = itemsRutaActiva[index];
+      itemsRutaActiva[index] = itemsRutaActiva[nuevo];
+      itemsRutaActiva[nuevo] = temp;
+      renderTablaOrdenar();
+    }
+
+    function cambiarPosicionManual(oldIdx, posStr) {
+      let pos = parseInt(posStr, 10) - 1;
+      if (isNaN(pos)) return;
+      pos = Math.max(0, Math.min(itemsRutaActiva.length - 1, pos));
+      const [item] = itemsRutaActiva.splice(oldIdx, 1);
+      itemsRutaActiva.splice(pos, 0, item);
+      renderTablaOrdenar();
+    }
+
+    function quitarDeOrden(index) {
+      itemsRutaActiva.splice(index, 1);
+      recalcularTotalesEnVivo();
+      renderTablaOrdenar();
+      renderFacturasDisponibles();
+    }
+
+    function ordenarPorCampo(campo) {
+      itemsRutaActiva.sort((a, b) => String(a[campo] || '').localeCompare(String(b[campo] || '')));
+      renderTablaOrdenar();
+    }
+
+    function handleDrop(e, targetIdx) {
+      e.preventDefault();
+      if (dragSrcIndex === null || dragSrcIndex === targetIdx) return;
+      const [moved] = itemsRutaActiva.splice(dragSrcIndex, 1);
+      itemsRutaActiva.splice(targetIdx, 0, moved);
+      dragSrcIndex = null;
+      renderTablaOrdenar();
+    }
+
+    async function cargarRutaParaEditar(folio) {
+      try {
+        const res = await apiCall('getDetalleRuta', { folio: folio }, 'GET');
+        if (!res || !res.ok || !res.data) {
+          alert('No se pudo cargar la ruta para edición.');
+          return;
+        }
+
+        const data = res.data;
+        const c = data.cabecera;
+        folioEnEdicion = c.folio;
+        document.getElementById('bannerModoEdicion').classList.remove('hidden');
+        document.getElementById('lblFolioEditando').innerText = c.folio;
+
+        const partes = String(c.fecha).split('/');
+        if (partes.length === 3) document.getElementById('inFecha').value = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+
+        // Asignación de ruta al select
+        const rutaGuardada = c.ruta || c.turno || 'LOCAL MATUTINA';
+        const sel = document.getElementById('inTurno');
+        if (sel.querySelector(`option[value="${rutaGuardada}"]`)) {
+          sel.value = rutaGuardada;
+        } else if (String(c.folio).startsWith('F-') || rutaGuardada.includes('FOR')) {
+          sel.value = 'SONORA SUR';
+        } else {
+          sel.value = 'LOCAL MATUTINA';
+        }
+
+        document.getElementById('inChofer').value = c.chofer || '';
+        document.getElementById('inUnidad').value = c.unidad || '';
+        document.getElementById('inTelefono').value = c.telefonoChofer || '';
+        document.getElementById('inAuxiliar').value = c.auxiliar || 'NA';
+        document.getElementById('inEmbarque').value = c.embarque || '';
+        document.getElementById('inElaboro').value = c.elaboro || obtenerUsuarioActivo();
+        document.getElementById('inHoraSalida').value = c.horaSalida || '';
+        document.getElementById('inHoraRegreso').value = c.horaRegreso || '';
+        document.getElementById('inDiablitos').value = c.diablitos;
+        document.getElementById('inTerminal').value = c.terminal;
+        document.getElementById('inPatin').value = c.patin;
+        document.getElementById('inTarimasAzules').value = c.tarimasAzules;
+        document.getElementById('inTarimasCafes').value = c.tarimasCafes;
+        document.getElementById('inTarjetaEmp').value = c.tarjetaEmpresarial;
+        document.getElementById('inVitafilm').value = c.vitafilm;
+        document.getElementById('inPoliza').value = c.poliza;
+
+        itemsRutaActiva = data.facturas.map(f => ({ ...f }));
+        actualizarEtiquetaTipoFolio();
+        recalcularTotalesEnVivo();
+        document.getElementById('liveClientes').value = c.clientes;
+        document.getElementById('livePuntos').value = c.puntosEntrega;
+        cambiarTab('tab-ordenar');
+      } catch (err) {
+        alert('Error al abrir la ruta: ' + err.message);
+      }
+    }
+
+    function cancelarModoEdicion() {
+      folioEnEdicion = null;
+      itemsRutaActiva = [];
+      document.getElementById('bannerModoEdicion').classList.add('hidden');
+      document.getElementById('inChofer').value = '';
+      document.getElementById('inUnidad').value = '';
+      actualizarEtiquetaTipoFolio();
+      recalcularTotalesEnVivo();
+      renderFacturasDisponibles();
+      cambiarTab('tab-armar');
+    }
+
+    async function guardarRuta() {
+      const chofer = document.getElementById('inChofer').value.trim();
+      const unidad = document.getElementById('inUnidad').value.trim();
+      const rutaVal = document.getElementById('inTurno').value;
+
+      if (!chofer || !unidad) { alert('Ingresa el CHOFER y la UNIDAD.'); return; }
+      if (itemsRutaActiva.length === 0) { alert('Selecciona al menos una factura.'); return; }
+
+      const rawDate = document.getElementById('inFecha').value;
+      const partes = rawDate ? rawDate.split('-') : [];
+      const fechaFormateada = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : rawDate;
+
+      const payload = {
+        folioExistente: folioEnEdicion,
+        cabecera: {
+          fecha: fechaFormateada,
+          turno: rutaVal,
+          ruta: rutaVal,
+          chofer: chofer.toUpperCase(),
+          unidad: unidad,
+          telefonoChofer: document.getElementById('inTelefono').value.trim(),
+          auxiliar: document.getElementById('inAuxiliar').value.trim().toUpperCase(),
+          embarque: document.getElementById('inEmbarque').value.trim().toUpperCase(),
+          elaboro: obtenerUsuarioActivo(),
+          horaSalida: document.getElementById('inHoraSalida').value,
+          horaRegreso: document.getElementById('inHoraRegreso').value,
+          diablitos: document.getElementById('inDiablitos').value,
+          terminal: document.getElementById('inTerminal').value,
+          patin: document.getElementById('inPatin').value,
+          tarimasAzules: document.getElementById('inTarimasAzules').value,
+          tarimasCafes: document.getElementById('inTarimasCafes').value,
+          tarjetaEmpresarial: document.getElementById('inTarjetaEmp').value,
+          vitafilm: document.getElementById('inVitafilm').value,
+          poliza: document.getElementById('inPoliza').value,
+          clientesManual: document.getElementById('liveClientes').value,
+          puntosManual: document.getElementById('livePuntos').value
+        },
+        facturas: itemsRutaActiva
+      };
+
+      const btn = document.getElementById('btnGuardarRuta');
+      btn.disabled = true;
+      btn.innerText = 'Guardando ruta...';
+
+      try {
+        const res = await apiCall('guardarRuta', payload, 'POST');
+        if (res && res.ok) {
+          alert(`✅ Hoja de Ruta Guardada!\nFolio: ${res.folio}\nRuta: ${rutaVal}\nElaboró: ${res.usuario}`);
+          const folioGuardado = res.folio;
+          folioEnEdicion = null;
+          itemsRutaActiva = [];
+          document.getElementById('bannerModoEdicion').classList.add('hidden');
+          actualizarEtiquetaTipoFolio();
+          recalcularTotalesEnVivo();
+          await cargarDatosIniciales();
+          cambiarTab('tab-historial');
+          verRutaImprimible(folioGuardado);
+        } else {
+          alert('⚠️ Atención: ' + (res ? res.msg : 'Error desconocido'));
+        }
+      } catch (err) {
+        alert('❌ Error de comunicación:\n' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '💾 Guardar Hoja de Ruta';
+      }
+    }
+
+    function procesarYSubirExcel() {
+      const fileInput = document.getElementById('inputExcelFile');
+      const statusDiv = document.getElementById('estadoCargaExcel');
+      if (!fileInput.files || fileInput.files.length === 0) { alert('Selecciona el archivo Excel.'); return; }
+
+      const reader = new FileReader();
+      statusDiv.classList.remove('hidden');
+      statusDiv.className = 'mt-4 text-xs font-bold text-center text-cyblue';
+      statusDiv.innerText = 'Leyendo archivo Excel...';
+
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+
+          statusDiv.innerText = 'Enviando datos al servidor...';
+
+          const res = await apiCall('cargarReporteTemporal', { filas: rows }, 'POST');
+          if (res && res.ok) {
+            statusDiv.className = 'mt-4 text-xs font-bold text-center text-emerald-600';
+            statusDiv.innerText = `✅ Se cargaron ${res.total} facturas correctamente.`;
+            itemsRutaActiva = [];
+            cargarDatosIniciales();
+            setTimeout(() => cambiarTab('tab-armar'), 1000);
+          } else {
+            statusDiv.className = 'mt-4 text-xs font-bold text-center text-cyred';
+            statusDiv.innerText = '⚠️ ' + (res ? res.msg : 'Error al cargar');
+          }
+        } catch (err) {
+          statusDiv.className = 'mt-4 text-xs font-bold text-center text-cyred';
+          statusDiv.innerText = '❌ Error: ' + err.message;
+        }
+      };
+      reader.readAsArrayBuffer(fileInput.files[0]);
+    }
+
+    function renderTablaHistorial(lista) {
+      const tbody = document.getElementById('tbodyHistorialRutas');
+      if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-slate-400">Sin hojas de ruta registradas.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(r => {
+        const esForanea = String(r.folio).toUpperCase().startsWith('F-');
+        const badge = esForanea ? `<span class="bg-red-100 text-cyred font-black px-2 py-0.5 rounded">${r.folio}</span>` : `<span class="bg-blue-100 text-cyblue font-black px-2 py-0.5 rounded">${r.folio}</span>`;
+        return `
+          <tr class="hover:bg-blue-50/40">
+            <td class="p-2">${badge}</td>
+            <td class="p-2">${r.fecha}</td>
+            <td class="p-2 font-semibold">${r.turno || r.ruta || 'LOCAL'}</td>
+            <td class="p-2 text-center font-bold text-cyblue">${r.unidad}</td>
+            <td class="p-2">${r.chofer}</td>
+            <td class="p-2 text-slate-500 font-semibold text-[11px]">${r.elaboro || 'SISTEMA'}</td>
+            <td class="p-2 text-center font-bold">${r.facturas}</td>
+            <td class="p-2 text-center">${r.clientes}</td>
+            <td class="p-2 text-center">${r.puntosEntrega}</td>
+            <td class="p-2 text-right">${Number(r.kilos).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+            <td class="p-2 text-right font-semibold">${r.bultos}</td>
+            <td class="p-2 text-right font-mono font-bold">$${Number(r.totalImporte).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+            <td class="p-2 text-center space-x-1 whitespace-nowrap">
+              <button onclick="verRutaImprimible('${r.folio}')" class="bg-cyblue text-white px-2.5 py-1 rounded text-xs font-bold">🖨️ Ver</button>
+              <button onclick="cargarRutaParaEditar('${r.folio}')" class="bg-amber-400 text-slate-900 px-2.5 py-1 rounded text-xs font-bold">✏️ Editar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filtrarHistorial() {
+      const q = document.getElementById('inputBuscarHistorial').value.toLowerCase();
+      renderTablaHistorial(historialRutas.filter(r => r.folio.toLowerCase().includes(q) || r.chofer.toLowerCase().includes(q) || r.unidad.toLowerCase().includes(q) || (r.turno && r.turno.toLowerCase().includes(q))));
+    }
+
+    async function verRutaImprimible(folio) {
+      try {
+        const res = await apiCall('getDetalleRuta', { folio: folio }, 'GET');
+        if (!res || !res.ok || !res.data) {
+          alert('No se pudo obtener el detalle de la ruta.');
+          return;
+        }
+
+        const data = res.data;
+        const c = data.cabecera;
+
+        document.getElementById('pFolioGrande').innerText = c.folio;
+        document.getElementById('pFolioTabla').innerText = c.folio;
+        document.getElementById('pFecha').innerText = c.fecha;
+        document.getElementById('pTurno').innerText = c.turno || c.ruta || 'LOCAL';
+        document.getElementById('pChofer').innerText = c.chofer;
+        document.getElementById('pAuxiliar').innerText = c.auxiliar;
+        document.getElementById('pEmbarque').innerText = c.embarque;
+        document.getElementById('pElaboro').innerText = c.elaboro;
+        document.getElementById('pTelefono').innerText = c.telefonoChofer || 'N/A';
+        document.getElementById('pTarjetaEmp').innerText = c.tarjetaEmpresarial;
+        document.getElementById('pVitafilm').innerText = c.vitafilm;
+        document.getElementById('pHoraSalida').innerText = c.horaSalida;
+        document.getElementById('pHoraRegreso').innerText = c.horaRegreso;
+        document.getElementById('pFacturas').innerText = c.facturas;
+        document.getElementById('pClientes').innerText = c.clientes;
+        document.getElementById('pPuntos').innerText = c.puntosEntrega;
+        document.getElementById('pKilos').innerText = Number(c.kilos).toLocaleString('es-MX', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        document.getElementById('pBultos').innerText = c.bultos;
+        document.getElementById('pTotalBultosFoot').innerText = c.bultos + ' BULTOS';
+        document.getElementById('pUnidad').innerText = c.unidad;
+        document.getElementById('pDiablitos').innerText = c.diablitos;
+        document.getElementById('pPoliza').innerText = c.poliza;
+        document.getElementById('pTarimasAzules').innerText = c.tarimasAzules;
+        document.getElementById('pTarimasCafes').innerText = c.tarimasCafes;
+        document.getElementById('pPatin').innerText = c.patin;
+        document.getElementById('pTerminal').innerText = c.terminal;
+
+        const totalFilasMostrar = Math.max(20, data.facturas.length);
+        let htmlFilas = '', sumaImporte = 0;
+
+        for (let i = 0; i < totalFilasMostrar; i++) {
+          const f = data.facturas[i];
+          if (f) {
+            sumaImporte += Number(f.importe) || 0;
+            htmlFilas += `
+              <tr>
+                <td class="text-center font-bold">${i + 1}</td>
+                <td class="font-mono font-semibold">${f.factura}</td>
+                <td class="uppercase">${f.razonSocial}</td>
+                <td class="uppercase">${f.sucursal}</td>
+                <td class="uppercase text-center">${f.zona}</td>
+                <td class="uppercase text-center font-bold">${f.pago}</td>
+                <td class="text-right">${f.efectivo || ''}</td>
+                <td class="text-right">${f.transfer || ''}</td>
+                <td class="text-right">${f.cheque || ''}</td>
+                <td class="text-right">${f.tarjeta || ''}</td>
+                <td>${f.comentarios || ''}</td>
+                <td class="text-right font-mono font-bold">$${Number(f.importe).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+              </tr>
+            `;
+          } else {
+            htmlFilas += `<tr><td class="text-center font-bold text-slate-400">${i + 1}</td><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+          }
+        }
+
+        document.getElementById('tbodyImpresionFacturas').innerHTML = htmlFilas;
+        document.getElementById('pTotalImporte').innerText = '$' + sumaImporte.toLocaleString('es-MX', {minimumFractionDigits: 2});
+        const costoKilo = c.kilos > 0 ? (sumaImporte / c.kilos) : 0;
+        document.getElementById('pCostoKilo').innerText = '$' + costoKilo.toLocaleString('es-MX', {minimumFractionDigits: 2});
+
+        document.getElementById('contenedorHojaImpresion').classList.remove('hidden');
+      } catch (err) {
+        alert('Error al visualizar hoja imprimible: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
