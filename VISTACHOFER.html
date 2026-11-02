@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CY Alimentos - Portal Operadores</title>
+    <style>
+        :root {
+            --cy-blue: #0072ce;
+            --cy-blue-dark: #005499;
+            --cy-red: #e30613;
+            --cy-red-dark: #b8000a;
+            --success: #28a745;
+            --whatsapp: #25d366;
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 12px;
+            padding-bottom: 75px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 440px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding: 10px 0;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+        }
+
+        .brand-title {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: var(--cy-blue);
+        }
+
+        .brand-title span {
+            color: var(--cy-red);
+        }
+
+        .app-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        h2, h3 {
+            color: var(--cy-blue-dark);
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            background: #fff;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--cy-blue);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--cy-blue);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0, 114, 206, 0.2);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-red { 
+            background-color: var(--cy-red); 
+            box-shadow: 0 4px 10px rgba(227, 6, 19, 0.2);
+        }
+        .btn-red:active { background-color: var(--cy-red-dark); }
+
+        .btn-success { 
+            background-color: var(--success); 
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2);
+        }
+
+        .btn-cedis {
+            background-color: #1e293b;
+            color: #f8fafc;
+            box-shadow: 0 4px 10px rgba(30, 41, 59, 0.25);
+            margin-top: 10px;
+        }
+
+        .btn-secondary { 
+            background-color: #64748b; 
+            box-shadow: none;
+        }
+
+        .btn-whatsapp {
+            background-color: var(--whatsapp);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25);
+            margin-top: 12px;
+        }
+
+        .hidden { display: none !important; }
+
+        .flex-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .flex-row button {
+            flex: 1;
+            padding: 14px 6px;
+            font-size: 14px;
+        }
+
+        .stop-item {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-left: 6px solid var(--cy-blue);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            transition: all 0.2s;
+        }
+
+        .stop-item:active {
+            background: #f0f7ff;
+        }
+
+        .stop-item.completed {
+            border-left-color: var(--success);
+            background: #f8fdf9;
+        }
+
+        .stop-item.rejected {
+            border-left-color: var(--cy-red);
+            background: #fef8f8;
+        }
+
+        .stop-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            color: #475569;
+            float: right;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            padding: 10px 16px;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .btn-help {
+            background: #f1f5f9;
+            color: var(--cy-blue-dark);
+            border: 1px solid var(--border);
+            padding: 9px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            width: auto;
+            box-shadow: none;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 24px;
+            font-weight: 700;
+            color: var(--cy-blue);
+            font-size: 15px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(2px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 22px;
+            border-radius: 18px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .manual-step {
+            margin-bottom: 12px;
+            border-left: 3px solid var(--cy-blue);
+            padding-left: 10px;
+        }
+
+        .manual-step strong {
+            display: block;
+            color: var(--cy-blue-dark);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .manual-step p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- ENCABEZADO -->
+        <header class="brand-header">
+            <div class="logo-box">
+                <svg class="logo-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 50C25 45 40 30 55 15C50 30 65 25 80 18C70 32 85 30 95 35C80 45 65 50 50 52C40 53 30 48 20 58C35 56 45 60 55 70C45 68 35 72 25 82C40 76 55 78 70 85C50 88 30 82 10 50Z" fill="#e30613"/>
+                </svg>
+                <div class="brand-title">CY <span>ALIMENTOS</span></div>
+            </div>
+            <p class="app-subtitle" id="lblSesionInfo">🚛 Sistema de Reparto y Trazabilidad</p>
+        </header>
+
+        <!-- VISTA 1: LOGIN -->
+        <div id="loginView" class="card">
+            <h2>🔑 Acceso de Operador</h2>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Usuario:</label>
+                    <input type="text" id="usuario" required placeholder="Ingresa tu usuario">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña:</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit">🚚 Ingresar a Ruta</button>
+            </form>
+        </div>
+
+        <!-- CARGA -->
+        <div id="loadingView" class="card hidden">
+            <div class="loading-spinner">Sincronizando con CEDIS... ⏳</div>
+        </div>
+
+        <!-- SIN RUTAS -->
+        <div id="noRouteView" class="card hidden" style="text-align: center; padding: 30px 20px;">
+            <div style="font-size: 40px; margin-bottom: 10px;">📋</div>
+            <h3>Sin Viajes Pendientes</h3>
+            <p style="color: var(--text-muted); margin-top: 6px; font-size: 14px;">No tienes paradas registradas para hoy.</p>
+            <button onclick="cerrarSesion()" class="btn-secondary" style="margin-top: 18px;">Cerrar Sesión</button>
+        </div>
+
+        <!-- VISTA 2: LISTA DE PARADAS -->
+        <div id="listView" class="hidden">
+            <div class="card" style="padding: 14px 16px;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px;">Ruta: <span id="txtFolioRuta" style="color: var(--cy-red);">-</span></h3>
+                        <p style="font-size: 12px; color: var(--text-muted); font-weight: 600;" id="txtProgreso">0 de 0 entregadas</p>
+                    </div>
+                    <button onclick="cerrarSesion()" class="btn-red" style="width: auto; padding: 8px 14px; font-size: 12px; box-shadow: none;">Salir</button>
+                </div>
+                
+                <button id="btnCedis" onclick="confirmarLlegadaCEDIS()" class="btn-cedis">
+                    🏁 Finalizar Ruta (Llegada al CEDIS)
+                </button>
+            </div>
+
+            <div id="stopsContainer"></div>
+        </div>
+
+        <!-- VISTA 3: DETALLE DE ENTREGA -->
+        <div id="detailView" class="hidden">
+            <div class="card">
+                <button onclick="volverALista()" class="btn-secondary" style="width: auto; padding: 6px 12px; font-size: 12px; margin-bottom: 14px;">⬅ Volver al listado</button>
+                <h3>📦 Detalle de Entrega</h3>
+                <p style="margin-bottom: 6px; font-size: 14px;"><strong>Cliente:</strong> <span id="lblCliente">-</span></p>
+                <p style="margin-bottom: 6px; font-size: 14px;"><strong>Destino:</strong> <span id="lblDireccion">-</span></p>
+                <p style="margin-bottom: 4px; font-size: 14px;"><strong>Factura:</strong> <span id="lblFactura" style="color: var(--cy-blue); font-weight: 700;">-</span></p>
+            </div>
+
+            <!-- ¿RECIBE? -->
+            <div id="stepRecibe" class="card">
+                <h3>❓ ¿El cliente recibe la mercancía?</h3>
+                <div class="flex-row" style="margin-top: 14px;">
+                    <button class="btn-success" onclick="setRecibe(true)">✅ SÍ Recibe</button>
+                    <button class="btn-red" onclick="setRecibe(false)">❌ NO Recibe</button>
+                </div>
+            </div>
+
+            <!-- NO RECIBE -->
+            <div id="flowNoRecibe" class="card hidden">
+                <h3>⚠️ Registro de Incidencia</h3>
+                <div class="form-group">
+                    <label>Tipo de afectación:</label>
+                    <select id="motivoNoRecibe">
+                        <option value="Reenvío">🔄 Reenvío (Reintento posterior)</option>
+                        <option value="Nota de Crédito Factura Completa">📄 Nota de Crédito (Factura Completa)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Justificación obligatoria:</label>
+                    <textarea id="comentarioNoRecibe" rows="3" placeholder="Explica detalladamente la causa..."></textarea>
+                </div>
+                <button class="btn-success" onclick="enviarRegistro('RECHAZO')">Confirmar Registro</button>
+            </div>
+
+            <!-- SÍ RECIBE -->
+            <div id="flowSiRecibe" class="card hidden">
+                <h3>💰 Cobro y Cierre</h3>
+                <div class="form-group">
+                    <label>1. Método de Pago:</label>
+                    <select id="tipoPago">
+                        <option value="Crédito">💳 Crédito</option>
+                        <option value="Efectivo">💵 Efectivo</option>
+                        <option value="Transferencia">📱 Transferencia</option>
+                        <option value="Cheque">📄 Cheque</option>
+                        <option value="Tarjeta">💳 Tarjeta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>2. ¿Aplica Nota de Crédito parcial?</label>
+                    <select id="tieneNC" onchange="toggleNCComentario(this.value)">
+                        <option value="No">No</option>
+                        <option value="Si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="boxComentProducto">
+                    <label>Detalle de devolución / Justificación NC:</label>
+                    <textarea id="comentarioProducto" rows="2" placeholder="Especifica qué productos y motivos..."></textarea>
+                </div>
+                <div class="form-group" id="boxComentOpcional">
+                    <label>Observaciones de entrega (Opcional):</label>
+                    <input type="text" id="comentarioOpcional" placeholder="Dejar vacío para 'Entrega exitosa'">
+                </div>
+                <button class="btn-success" onclick="enviarRegistro('ENTREGA')">Finalizar Parada</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOTÓN DE ASISTENCIA FIJO -->
+    <footer class="footer-nav">
+        <button class="btn-help" onclick="toggleModal(true)">ℹ️ Ayuda Operativa</button>
+    </footer>
+
+    <!-- MODAL DE AYUDA -->
+    <div id="helpModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <span>📖 Manual de Uso Rápido</span>
+                <span onclick="toggleModal(false)" style="cursor:pointer; font-size: 20px; color: var(--text-muted);">&times;</span>
+            </h3>
+
+            <div class="manual-step">
+                <strong>1. Selección de Parada</strong>
+                <p>Elige al cliente que vas a visitar tocando su tarjeta en la lista.</p>
+            </div>
+
+            <div class="manual-step">
+                <strong>2. Validación de Recepción</strong>
+                <p>Si <strong>NO</strong> recibe, marca <em>Reenvío</em> o <em>Nota de Crédito Factura Completa</em> y escribe la causa obligatoria.</p>
+            </div>
+
+            <div class="manual-step">
+                <strong>3. Cobro y Horario</strong>
+                <p>Si <strong>SÍ</strong> recibe, selecciona el método de pago. La hora de entrega se registrará automáticamente y la justificación quedará como <em>"Entrega exitosa"</em> salvo que agregues observaciones.</p>
+            </div>
+
+            <div class="manual-step">
+                <strong>4. Llegada al CEDIS</strong>
+                <p>Al concluir todos los clientes, presiona el botón <em>Finalizar Ruta (Llegada al CEDIS)</em>.</p>
+            </div>
+
+            <a href="https://wa.me/526624307342?text=Hola,%20necesito%20asistencia%20con%20la%20WebApp%20de%20reparto" target="_blank" class="btn-whatsapp">
+                💬 Soporte WhatsApp (662 430 7342)
+            </a>
+
+            <button onclick="toggleModal(false)" class="btn-secondary" style="margin-top: 10px; padding: 12px;">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIYPUrx78y7pYBS0C0snztCLaQTmITzdmN0RLIixNpOTgA2vlspuDomIZFIuU5KTik/exec";
+
+        let listaParadasGlobal = [];
+        let paradaSeleccionada = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const usuarioGuardado = localStorage.getItem('usuarioChofer');
+            if (usuarioGuardado) {
+                document.getElementById('lblSesionInfo').innerText = `Operador: ${usuarioGuardado}`;
+                document.getElementById('loginView').classList.add('hidden');
+                cargarRutas(usuarioGuardado);
+            }
+        });
+
+        function toggleModal(mostrar) {
+            const modal = document.getElementById('helpModal');
+            if (mostrar) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const usuario = document.getElementById('usuario').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            mostrarCarga(true);
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "login", usuario, password })
+                });
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    localStorage.setItem('usuarioChofer', result.usuario);
+                    document.getElementById('lblSesionInfo').innerText = `Operador: ${result.usuario}`;
+                    document.getElementById('loginView').classList.add('hidden');
+                    cargarRutas(result.usuario);
+                } else {
+                    mostrarCarga(false);
+                    alert(result.message || "Usuario o contraseña incorrectos");
+                }
+            } catch (error) {
+                mostrarCarga(false);
+                alert("Error de conexión al iniciar sesión.");
+            }
+        }
+
+        async function cargarRutas(usuario) {
+            mostrarCarga(true);
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=obtenerRuta&usuario=${usuario}`);
+                const result = await response.json();
+                mostrarCarga(false);
+
+                if (result.status === "success") {
+                    listaParadasGlobal = result.data;
+                    document.getElementById('txtFolioRuta').innerText = result.folioRuta || "Activa";
+                    renderizarLista();
+                    document.getElementById('listView').classList.remove('hidden');
+                    document.getElementById('noRouteView').classList.add('hidden');
+                } else {
+                    document.getElementById('listView').classList.add('hidden');
+                    document.getElementById('noRouteView').classList.remove('hidden');
+                }
+            } catch (error) {
+                mostrarCarga(false);
+                alert("Error al obtener las paradas de la ruta.");
+            }
+        }
+
+        function renderizarLista() {
+            const container = document.getElementById('stopsContainer');
+            container.innerHTML = "";
+
+            let completadas = 0;
+
+            listaParadasGlobal.forEach((item, index) => {
+                const estatusLower = item.estatus.toLowerCase();
+                const isCompleted = estatusLower === 'entregada';
+                const isRejected = estatusLower.includes('reenvío') || 
+                                   estatusLower.includes('reenvio') || 
+                                   estatusLower.includes('nota de crédito') || 
+                                   estatusLower.includes('no entregado') || 
+                                   estatusLower.includes('devolución');
+
+                if (isCompleted || isRejected) completadas++;
+
+                const div = document.createElement('div');
+                div.className = `stop-item ${isCompleted ? 'completed' : ''} ${isRejected ? 'rejected' : ''}`;
+                
+                let badgeClass = "";
+                let badgeText = item.estatus;
+                if (isCompleted) badgeClass = "badge-success";
+                else if (isRejected) badgeClass = "badge-danger";
+
+                div.innerHTML = `
+                    <span class="stop-badge ${badgeClass}">${badgeText}</span>
+                    <strong style="font-size: 15px; color: var(--cy-blue-dark);">#${item.orden || (index + 1)} ${item.cliente}</strong>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">📍 ${item.direccion}</p>
+                    <p style="font-size: 12px; color: var(--cy-blue); margin-top: 2px; font-weight: 600;">Doc: ${item.factura}</p>
+                `;
+
+                div.onclick = () => abrirEntrega(item);
+                container.appendChild(div);
+            });
+
+            document.getElementById('txtProgreso').innerText = `${completadas} de ${listaParadasGlobal.length} entregadas`;
+        }
+
+        function abrirEntrega(item) {
+            paradaSeleccionada = item;
+            document.getElementById('lblCliente').innerText = item.cliente;
+            document.getElementById('lblDireccion').innerText = item.direccion;
+            document.getElementById('lblFactura').innerText = item.factura;
+
+            document.getElementById('stepRecibe').classList.remove('hidden');
+            document.getElementById('flowSiRecibe').classList.add('hidden');
+            document.getElementById('flowNoRecibe').classList.add('hidden');
+            document.getElementById('comentarioNoRecibe').value = "";
+            document.getElementById('comentarioProducto').value = "";
+            document.getElementById('comentarioOpcional').value = "";
+            document.getElementById('tieneNC').value = "No";
+            document.getElementById('boxComentProducto').classList.add('hidden');
+
+            document.getElementById('listView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function volverALista() {
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function setRecibe(recibe) {
+            document.getElementById('stepRecibe').classList.add('hidden');
+            if (recibe) {
+                document.getElementById('flowSiRecibe').classList.remove('hidden');
+            } else {
+                document.getElementById('flowNoRecibe').classList.remove('hidden');
+            }
+        }
+
+        function toggleNCComentario(val) {
+            const box = document.getElementById('boxComentProducto');
+            if (val === 'Si') box.classList.remove('hidden');
+            else box.classList.add('hidden');
+        }
+
+        async function enviarRegistro(tipoAccion) {
+            let comentariosFinales = "";
+            let tipoPagoFinal = "N/A";
+            let estatusFinal = "";
+
+            if (tipoAccion === "RECHAZO") {
+                comentariosFinales = document.getElementById('comentarioNoRecibe').value.trim();
+                if (!comentariosFinales) {
+                    alert("Es obligatorio ingresar un comentario explicando el motivo.");
+                    return;
+                }
+                estatusFinal = document.getElementById('motivoNoRecibe').value;
+            } else {
+                tipoPagoFinal = document.getElementById('tipoPago').value;
+                const tieneNC = document.getElementById('tieneNC').value;
+
+                if (tieneNC === "Si") {
+                    comentariosFinales = document.getElementById('comentarioProducto').value.trim();
+                    if (!comentariosFinales) {
+                        alert("Por favor especifica los productos y motivo de la nota de crédito.");
+                        return;
+                    }
+                    estatusFinal = "Devolución Parcial NC";
+                } else {
+                    estatusFinal = "Entregada";
+                    // Si el chofer puso una nota opcional, se envía; si no, queda vacío y Apps Script pondrá "Entrega exitosa"
+                    comentariosFinales = document.getElementById('comentarioOpcional').value.trim();
+                }
+            }
+
+            mostrarCarga(true);
+            document.getElementById('detailView').classList.add('hidden');
+
+            const payload = {
+                action: "finalizarEntrega",
+                folio: paradaSeleccionada.folio,
+                factura: paradaSeleccionada.factura,
+                estatusEntrega: estatusFinal,
+                comentarios: comentariosFinales,
+                tipoPago: tipoPagoFinal
+            };
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    const usuario = localStorage.getItem('usuarioChofer');
+                    await cargarRutas(usuario);
+                    document.getElementById('listView').classList.remove('hidden');
+                } else {
+                    mostrarCarga(false);
+                    document.getElementById('detailView').classList.remove('hidden');
+                    alert("Error al actualizar la entrega: " + result.message);
+                }
+            } catch (error) {
+                mostrarCarga(false);
+                document.getElementById('detailView').classList.remove('hidden');
+                alert("Error de conexión al sincronizar.");
+            }
+        }
+
+        async function confirmarLlegadaCEDIS() {
+            if (!confirm("¿Deseas marcar el fin de la ruta y registrar tu llegada al CEDIS?")) return;
+
+            mostrarCarga(true);
+            const folio = document.getElementById('txtFolioRuta').innerText;
+            const usuario = localStorage.getItem('usuarioChofer');
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "cerrarRutaCEDIS",
+                        folio: folio,
+                        usuario: usuario
+                    })
+                });
+                const result = await response.json();
+                mostrarCarga(false);
+
+                if (result.status === "success") {
+                    alert(`🏁 Ruta concluida con éxito. Hora registrada: ${result.horaCierre}`);
+                    cerrarSesion();
+                } else {
+                    alert("Aviso: " + (result.message || "No se pudo registrar la llegada al CEDIS"));
+                }
+            } catch (error) {
+                mostrarCarga(false);
+                alert("Error de conexión al registrar la llegada al CEDIS.");
+            }
+        }
+
+        function mostrarCarga(activar) {
+            if (activar) document.getElementById('loadingView').classList.remove('hidden');
+            else document.getElementById('loadingView').classList.add('hidden');
+        }
+
+        function cerrarSesion() {
+            if (confirm("¿Deseas cerrar tu sesión?")) {
+                localStorage.clear();
+                document.getElementById('listView').classList.add('hidden');
+                document.getElementById('noRouteView').classList.add('hidden');
+                document.getElementById('detailView').classList.add('hidden');
+                document.getElementById('loginView').classList.remove('hidden');
+                document.getElementById('lblSesionInfo').innerText = "🚛 Sistema de Reparto y Trazabilidad";
+                document.getElementById('usuario').value = "";
+                document.getElementById('password').value = "";
+            }
+        }
+    </script>
+</body>
+</html>
